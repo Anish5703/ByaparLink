@@ -10,6 +10,7 @@ import com.example.ByaparLink.Model.Token;
 import com.example.ByaparLink.Model.Users;
 import com.example.ByaparLink.Repository.TokenRepo;
 import com.example.ByaparLink.Repository.UserRepo;
+import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -91,26 +92,18 @@ public class AuthService {
 
             Users newUser = userRepo.save(user);
 
-            //generating token and storing it to the repo with username
-            String token = generateToken();
-            tokenRepo.save(new Token(token,newUser));
-
-            //Concating url and token
-            String confirmationLink = getConfirmationUrl(servletRequest)+token;
-
-            //sending confirmation mail to the user
-            String htmlContent = emailService.buildConfirmationEmail(newUser.getUsername(),confirmationLink);
-            emailService.sendHtmlEmail(newUser.getEmail(),"Confirmation Mail",htmlContent);
-
             //prepare response to send
-            map.put("status","Check mail for confirmation");
+            map.put("status","Check mail for confirmation link");
             response.setRole(newUser.getRole());
             response.setError(false);
+            //send confirmation token to the user email address
+            sendConfirmationToken(newUser,servletRequest);
 
         }
         catch(Exception e)
         {
             map.put("status", "Registration Failed");
+            map.put("exception",e.getLocalizedMessage());
             response.setError(true);
         }
 
@@ -169,6 +162,63 @@ public class AuthService {
         }
     }
 
+    //Method to send registration confirmation token
+    public void sendConfirmationToken(Users user,HttpServletRequest servletRequest) throws MessagingException
+    {
+        //generating token and storing it to the repo with username
+        String token = generateToken();
+        tokenRepo.save(new Token(token,user));
+
+        //Concating url and token
+        String confirmationLink = getConfirmationUrl(servletRequest)+token;
+
+        //sending confirmation mail to the user
+        String htmlContent = emailService.buildConfirmationEmail(user.getUsername(),confirmationLink);
+        emailService.sendHtmlEmail(user.getEmail(),"Confirmation Mail",htmlContent);
+    }
+
+    //Method to resend registration confirmation token
+    public RegisterResponse resendConfirmationToken(String email,HttpServletRequest servletRequest)
+    {
+        Map<String,Object> map = new HashMap<>();
+
+        if(email.isEmpty())
+        {
+            map.put("status","Null Email field");
+            return new RegisterResponse(null,null,null,map,true);
+        }
+        else {
+               Users user = userRepo.findByEmail(email);
+               if(user==null)
+               {
+                   map.put("email","No registration found with this email id");
+                   map.put("status","Fill the registration form first");
+                   return new RegisterResponse(null,email,null,map,true);
+               }
+               else if(user.isActive())
+               {
+                   map.put("status","Account already active");
+                   return new RegisterResponse(user.getUsername(), user.getEmail(), user.getRole(),map,true);
+               }
+               else
+               {
+                   try {
+                       //deleting old token from the database
+                       tokenRepo.delete(tokenRepo.findByUser(user));
+                       //resending confirmation token
+                       sendConfirmationToken(user, servletRequest);
+                       map.put("status", "Check mail for confirmation link");
+                       return new RegisterResponse(user.getUsername(), user.getEmail(), user.getRole(), map, false);
+                   }
+                   catch(MessagingException e)
+                   {
+                       map.put("status","Failed to send confirmation link");
+                       return new RegisterResponse(user.getUsername(), user.getEmail(), user.getRole(),map,true);
+                   }
+               }
+        }
+
+    }
 
 
     //Method to check if username exists in database

@@ -7,6 +7,7 @@ import com.example.ByaparLink.DTO.Register.RegisterResponse;
 import com.example.ByaparLink.Service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
@@ -43,6 +44,17 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED).body(resp);
         else
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+    }
+    //Endpoint to send confirmation token
+    @PutMapping("/resendConfirmation")
+    public ResponseEntity<RegisterResponse> resendConfirmation(@RequestParam(name="email")String email,HttpServletRequest servletRequest)
+    {
+        RegisterResponse resp = authService.resendConfirmationToken(email,servletRequest);
+        if(!resp.isError())
+            return ResponseEntity.status(HttpStatus.OK).body(resp);
+        else
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+
     }
 
     //Endpoint to login user

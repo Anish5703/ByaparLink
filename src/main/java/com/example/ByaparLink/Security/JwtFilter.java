@@ -34,7 +34,7 @@ private MyUserDetailsService userDetailsService;
 
         if(authHeader != null && authHeader.startsWith("Bearer "))
         {
-            token = token.substring(7);
+            token = authHeader.substring(7);
             username = jwtService.extractUsername(token);
         }
         if(username != null && SecurityContextHolder.getContext().getAuthentication() == null)
