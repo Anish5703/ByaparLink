@@ -1,0 +1,205 @@
+package com.example.ByaparLink.Service;
+
+import com.example.ByaparLink.DTO.Login.LoginRequest;
+import com.example.ByaparLink.DTO.Login.LoginResponse;
+import com.example.ByaparLink.DTO.Register.RegisterRequest;
+import com.example.ByaparLink.DTO.Register.RegisterResponse;
+import com.example.ByaparLink.Mapper.UserMapper;
+import com.example.ByaparLink.Model.Enum.Role;
+import com.example.ByaparLink.Model.Token;
+import com.example.ByaparLink.Model.Users;
+import com.example.ByaparLink.Repository.TokenRepo;
+import com.example.ByaparLink.Repository.UserRepo;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+public class AuthService {
+
+    @Autowired
+    private UserRepo userRepo;
+
+    @Autowired
+    private TokenRepo tokenRepo;
+
+    @Autowired
+    private BCryptPasswordEncoder encoder;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private AuthenticationManager authManager;
+
+
+    //Method to login user with credentials
+    public LoginResponse loginUser(LoginRequest req)
+    {
+        Authentication auth = authManager.authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(),req.getPassword()));
+        Map<String,Object> map = new HashMap<>();
+        if(auth.isAuthenticated())
+        {
+            Users user = userRepo.findByUsername(req.getUsername());
+            map.put("status","Login Successfull");
+            String token = jwtService.generateToken(user.getUsername());
+            return UserMapper.toLoginResponse(user,token,map,false);
+        }
+        else
+        {
+            Users user = userRepo.findByUsername(req.getUsername());
+            if(user==null)
+                map.put("username","Username invalid");
+
+            else if(!req.getPassword().equals(user.getPassword()))
+                map.put("password","Password invalid");
+
+            map.put("status","Invalid login credentials");
+            return UserMapper.toLoginResponse(req,map,true);
+
+        }
+    }
+
+
+
+
+    //Method to register new user in database with encoding raw password
+    public RegisterResponse registerUser(RegisterRequest req,HttpServletRequest servletRequest) {
+
+        //Validating request for email and username
+        RegisterResponse response = validateRegisterRequest(req);
+        if (response.isError())
+            return response;
+
+        //Processing Valid request
+        Users user = UserMapper.toEntity(req);
+        user.setRole(Role.USER);
+        user.setPassword(encoder.encode(user.getPassword()));
+        Map<String, Object> map = new HashMap<>();
+        try{
+
+            Users newUser = userRepo.save(user);
+
+            //generating token and storing it to the repo with username
+            String token = generateToken();
+            tokenRepo.save(new Token(token,newUser));
+
+            //Concating url and token
+            String confirmationLink = getConfirmationUrl(servletRequest)+token;
+
+            //sending confirmation mail to the user
+            String htmlContent = emailService.buildConfirmationEmail(newUser.getUsername(),confirmationLink);
+            emailService.sendHtmlEmail(newUser.getEmail(),"Confirmation Mail",htmlContent);
+
+            //prepare response to send
+            map.put("status","Check mail for confirmation");
+            response.setRole(newUser.getRole());
+            response.setError(false);
+
+        }
+        catch(Exception e)
+        {
+            map.put("status", "Registration Failed");
+            response.setError(true);
+        }
+
+            response.setMessage(map);
+            return response;
+
+    }
+
+    //Method that validates the request and provides the response
+    public RegisterResponse validateRegisterRequest(RegisterRequest req) {
+        RegisterResponse resp = new RegisterResponse();
+        resp.setUsername(req.getUsername());
+        resp.setEmail(req.getEmail());
+
+        Map<String, Object> map = new HashMap<String, Object>();
+
+        if (isUsernameExists(req.getUsername())) {
+            map.put("username", "Username Already Exists");
+            resp.setError(true);
+        }
+        if (isEmailExists(req.getEmail())) {
+            map.put("email", "Email Already Exists");
+            resp.setError(true);
+
+        }
+        resp.setMessage(map);
+        return resp;
+    }
+
+
+    //Method to validate token and Set Users Active flag true
+    public RegisterResponse validateRegisterConfirmation(String tokenName)
+    {
+        Token token = tokenRepo.findByTokenName(tokenName);
+        Map<String,Object> map = new HashMap<>();
+
+        if(token!=null)
+        {
+            Users user = token.getUser();
+            user.setActive(true);
+            userRepo.save(user);
+            map.put("status","Registration Successful");
+            return UserMapper.toRegisterResponse(token.getUser(),map,false);
+
+        }
+        else
+        {
+            map.put("status","Registration Successful");
+            RegisterResponse resp = new RegisterResponse();
+            resp.setUsername(null);
+            resp.setEmail(null);
+            resp.setRole(null);
+            resp.setError(true);
+            resp.setMessage(map);
+            return resp;
+        }
+    }
+
+
+
+    //Method to check if username exists in database
+    public boolean isUsernameExists(String username) {
+        return userRepo.findByUsername(username) != null;
+
+    }
+
+    //Method to check if email exists in database
+    public boolean isEmailExists(String email) {
+        return userRepo.findByEmail(email) != null;
+    }
+
+
+
+
+    //Method to generate confirmation URL excluding token
+    public String getConfirmationUrl(HttpServletRequest request)
+    {
+       return  "http://"+request.getServerName()+":"+request.getServerPort()+"/api/auth/confirmRegistration?token=";
+    }
+
+    //Method to generate random token
+    public String generateToken()
+    {
+        String token = UUID.randomUUID().toString();
+        while(tokenRepo.findByTokenName(token)!=null)
+        {
+            token = UUID.randomUUID().toString();
+        }
+        return token;
+    }
+
+}
