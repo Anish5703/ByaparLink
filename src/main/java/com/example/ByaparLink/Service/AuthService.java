@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -48,25 +49,25 @@ public class AuthService {
     //Method to login user with credentials
     public LoginResponse loginUser(LoginRequest req)
     {
+        try{
         Authentication auth = authManager.authenticate(new UsernamePasswordAuthenticationToken(req.getUsername(),req.getPassword()));
-        Map<String,Object> map = new HashMap<>();
-        if(auth.isAuthenticated())
-        {
             Users user = userRepo.findByUsername(req.getUsername());
-            map.put("status","Login Successfull");
+            Map<String,Object> map = new HashMap<>();
+            map.put("status","Login Successfully");
             String token = jwtService.generateToken(user.getUsername());
             return UserMapper.toLoginResponse(user,token,map,false);
         }
-        else
+  catch(AuthenticationException ex)
         {
             Users user = userRepo.findByUsername(req.getUsername());
+            Map<String,Object> map = new HashMap<>();
             if(user==null)
                 map.put("username","Username invalid");
 
-            else if(!req.getPassword().equals(user.getPassword()))
+            else if(!user.getPassword().equals(encoder.encode(req.getPassword())))
                 map.put("password","Password invalid");
 
-            map.put("status","Invalid login credentials");
+            map.put("status","Login Failed");
             return UserMapper.toLoginResponse(req,map,true);
 
         }

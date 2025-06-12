@@ -7,7 +7,6 @@ import com.example.ByaparLink.DTO.Register.RegisterResponse;
 import com.example.ByaparLink.Service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;
@@ -29,10 +28,12 @@ public class AuthController {
 
 
         RegisterResponse resp = authService.registerUser(req,servletRequest);
+        HttpHeaders header = new HttpHeaders();
+        header.set("Content-Type","application/json");
         if (!resp.isError())
-            return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+            return ResponseEntity.status(HttpStatus.CREATED).headers(header).body(resp);
         else
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).headers(header).body(resp);
         }
 
       //Endpoint to confirm registration
@@ -40,35 +41,40 @@ public class AuthController {
     public ResponseEntity<RegisterResponse> confirmRegistration(@RequestParam(name="token")String token)
     {
         RegisterResponse resp = authService.validateRegisterConfirmation(token);
+        HttpHeaders header = new HttpHeaders();
+        header.set("Content-Type","application/json");
         if(!resp.isError())
-            return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+            return ResponseEntity.status(HttpStatus.CREATED).headers(header).body(resp);
         else
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).headers(header).body(resp);
     }
     //Endpoint to send confirmation token
     @PutMapping("/resendConfirmation")
     public ResponseEntity<RegisterResponse> resendConfirmation(@RequestParam(name="email")String email,HttpServletRequest servletRequest)
     {
         RegisterResponse resp = authService.resendConfirmationToken(email,servletRequest);
+        HttpHeaders header = new HttpHeaders();
+        header.set("Content-Type","application/json");
         if(!resp.isError())
-            return ResponseEntity.status(HttpStatus.OK).body(resp);
+            return ResponseEntity.status(HttpStatus.OK).headers(header).body(resp);
         else
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).headers(header).body(resp);
 
     }
 
     //Endpoint to login user
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest, HttpRequest httpRequest)
+    public ResponseEntity<LoginResponse> loginUser(@Valid @RequestBody LoginRequest loginRequest)
     {
         LoginResponse resp = authService.loginUser(loginRequest);
+        HttpHeaders header = new HttpHeaders();
+        header.set("Content-Type","application/json");
         if(!resp.isError()) {
-            HttpHeaders header = httpRequest.getHeaders();
-            header.add("Authorization","Bearer "+resp.getToken());
-            return ResponseEntity.status(HttpStatus.ACCEPTED).body(resp);
+            header.set("Authorization","Bearer "+resp.getToken());
+            return ResponseEntity.status(HttpStatus.ACCEPTED).headers(header).body(resp);
         }
         else
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(resp);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).headers(header).body(resp);
     }
 
     }
