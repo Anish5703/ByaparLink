@@ -68,9 +68,10 @@ public class SecurityConfig {
     public AuthenticationEntryPoint unauthorizedEntryPoint()
     {
         return (request,response,authException) -> {
+            String loginUrl = request.getScheme()+"://"+request.getServerName()+":"+request.getServerPort()+"/api/auth/login";
             response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\": \"Unauthorized - Please login at http://localhost:8081/api/auth/login\"");
+            response.getWriter().write("{\"error\": \"Unauthorized - Please login at \""+loginUrl);
         };
     }
 
@@ -82,11 +83,7 @@ public class SecurityConfig {
 
 
   public static final String[] PUBLIC_ENDPOINTS = {
-           "/api/auth/**",
-          "/api/auth/login",
-          "/api/auth/register",
-          "api/auth/confirmRegistration",
-          "api/auth/resendConfirmation"
+           "/api/auth/**"
 
   };
 }

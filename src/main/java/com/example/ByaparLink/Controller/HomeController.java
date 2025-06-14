@@ -13,7 +13,7 @@ public class HomeController {
     public String getHome(HttpServletRequest req)
     {
         String username = "anish";
-        String msg = "http://"+req.getServerName()+":"+req.getServerPort()+req.getContextPath();
+        String msg = req.getScheme()+"://"+req.getServerName()+":"+req.getServerPort()+req.getContextPath();
         return "Click this link: <a href=\"" + msg + "\">" + msg + "</a>";
     }
 
