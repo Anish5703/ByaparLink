@@ -1,17 +1,30 @@
+# Build outputs
 target/
-out/
 build/
+out/
 
-.mvn/wrapper/maven-wrapper.jar
-.git
-.idea
-.vscode
+# IDEs
+.idea/
+.vscode/
 *.iml
 *.ipr
 *.iws
 
-nbproject/
-.nb-gradle/
-.nbbuild/
-dist/
-nbdist/
+# Git
+.git/
+.gitignore
+
+# Maven wrapper
+.mvn/
+mvnw
+mvnw.cmd
+
+# OS/System files
+.DS_Store
+Thumbs.db
+
+# Test logs or local data (optional)
+*.log
+*.zip
+*.tar.gz
+*.db
