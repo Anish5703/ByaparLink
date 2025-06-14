@@ -31,7 +31,7 @@ public class SecurityConfig {
 
 
    @Bean
-    public SecurityFilterChain secuirtyFilterChain(HttpSecurity http) throws Exception
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         http
                 .csrf(configurer -> configurer.disable())
@@ -52,7 +52,7 @@ public class SecurityConfig {
     public AuthenticationProvider authenticationProvider()
     {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setPasswordEncoder(new BCryptPasswordEncoder(10));
+        provider.setPasswordEncoder(bCryptPasswordEncoder());
         provider.setUserDetailsService(userDetailsService);
         return provider;
 
@@ -70,7 +70,7 @@ public class SecurityConfig {
         return (request,response,authException) -> {
             response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"error\": \"Unauthorized - Please login at /api/login\"");
+            response.getWriter().write("{\"error\": \"Unauthorized - Please login at http://localhost:8081/api/auth/login\"");
         };
     }
 
@@ -80,8 +80,13 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(10);
     }
 
+
   public static final String[] PUBLIC_ENDPOINTS = {
            "/api/auth/**",
+          "/api/auth/login",
+          "/api/auth/register",
+          "api/auth/confirmRegistration",
+          "api/auth/resendConfirmation"
 
   };
 }

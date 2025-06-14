@@ -1,0 +1,30 @@
+
+services:
+  db:
+    image: postgres:15
+    container_name: postgresql-byaparlink
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: byaparlink-db
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    ports:
+      - "5431:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: byaparlink
+    depends_on:
+      - db
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/byaparlink-db
+      SPRING_DATASOURCE_USERNAME: myuser
+      SPRING_DATASOURCE_PASSWORD: mypassword
+    restart: unless-stopped
+
+volumes:
+  pgdata:
