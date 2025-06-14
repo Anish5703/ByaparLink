@@ -1,0 +1,17 @@
+target/
+out/
+build/
+
+.mvn/wrapper/maven-wrapper.jar
+.git
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+nbproject/
+.nb-gradle/
+.nbbuild/
+dist/
+nbdist/
