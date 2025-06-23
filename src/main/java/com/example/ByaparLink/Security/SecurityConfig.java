@@ -103,7 +103,11 @@ public class SecurityConfig {
           "/api/oauth/register",
           "/oauth2/authorization/**",
           "/login/oauth2/**",
-          "/api/oauth/**"
+          "/api/oauth/**",
+          "/v3/api-docs/**",
+          "/swagger-ui/**",
+          "/swagger-ui.html"
 
   };
+
 }
