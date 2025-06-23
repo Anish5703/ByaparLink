@@ -25,7 +25,7 @@ public class OauthController {
 
     //Endpoint to fetch email and also redirect to set username page
     @GetMapping("/register")
-    public ResponseEntity<?> setUsername(@CookieValue(name="email",required = false)String email)
+    public ResponseEntity<RegisterRequest> setUsername(@CookieValue(name="email",required = false)String email)
     {
         RegisterRequest registerRequest;
         if(email!=null) {
