@@ -6,6 +6,7 @@ import com.example.ByaparLink.DTO.Register.RegisterRequest;
 import com.example.ByaparLink.DTO.Register.RegisterResponse;
 import com.example.ByaparLink.Service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -75,6 +76,8 @@ public class AuthController {
         else
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).headers(header).body(resp);
     }
+
+
 
     }
 

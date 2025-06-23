@@ -12,9 +12,11 @@ public class HomeController {
     @GetMapping("/home")
     public String getHome(HttpServletRequest req)
     {
-        String username = "anish";
-        String msg = req.getScheme()+"://"+req.getServerName()+":"+req.getServerPort()+req.getContextPath();
-        return "Click this link: <a href=\"" + msg + "\">" + msg + "</a>";
+
+        StringBuilder url = new StringBuilder();
+        url.append(req.getScheme())
+                .append("://").append(req.getServerName()).append(":").append(req.getServerPort()).append(req.getContextPath());
+        return "Click this link: <a href=\"" + url.toString() + "\">" + url.toString() + "</a>";
     }
 
 

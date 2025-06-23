@@ -25,7 +25,6 @@ public class Users {
     @Column(unique = true)
     private String email;
 
-    @NotBlank(message="Password required")
     private String password;
 
     @Enumerated(EnumType.STRING)

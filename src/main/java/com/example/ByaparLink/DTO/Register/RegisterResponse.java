@@ -17,4 +17,10 @@ public class RegisterResponse {
     private Role role;
     private Map<String,Object> message;
     private boolean error;
+
+
+    public void addMessage(String key,Object value)
+    {
+        message.put(key,value);
+    }
 }

@@ -10,6 +10,9 @@ services:
       POSTGRES_PASSWORD: mypassword
     ports:
       - "5431:5432"
+
+    env_file:
+      - .env
     volumes:
       - pgdata:/var/lib/postgresql/data
 
@@ -20,10 +23,18 @@ services:
       - db
     ports:
       - "8081:8081"
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/byaparlink-db
-      SPRING_DATASOURCE_USERNAME: myuser
-      SPRING_DATASOURCE_PASSWORD: mypassword
+
+    env_file:
+      - .env
+
+
+#    environment:
+#      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/byaparlink-db
+#      SPRING_DATASOURCE_USERNAME: myuser
+#      SPRING_DATASOURCE_PASSWORD: mypassword
+
+  
+
     restart: unless-stopped
 
 volumes:

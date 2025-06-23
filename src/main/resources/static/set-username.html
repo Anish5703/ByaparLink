@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Set Username</title>
+    <style>
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background-color: #f9fafb;
+          padding: 2rem;
+          max-width: 500px;
+          margin: 0 auto;
+        }
+
+        h2 {
+          color: #111827;
+          text-align: center;
+        }
+
+        label {
+          display: block;
+          margin-top: 1rem;
+          color: #374151;
+        }
+
+        input, button {
+          padding: 0.6rem;
+          width: 100%;
+          margin-top: 0.5rem;
+          border: 1px solid #d1d5db;
+          border-radius: 5px;
+          font-size: 1rem;
+        }
+
+        button {
+          background-color: #2563eb;
+          color: white;
+          font-weight: bold;
+          margin-top: 1.5rem;
+          cursor: pointer;
+          transition: background 0.3s;
+        }
+
+        button:hover {
+          background-color: #1d4ed8;
+        }
+
+        .message {
+          margin-top: 1rem;
+          text-align: center;
+          color: #10b981;
+        }
+
+        .error {
+          color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Set Your Username</h2>
+<p>Email: <strong id="email-display">Loading...</strong></p>
+
+<form id="username-form">
+    <label for="username">Choose a username:</label>
+    <input type="text" id="username" placeholder="e.g. anish_p" required />
+    <button type="submit">Submit</button>
+</form>
+
+<p class="message" id="message"></p>
+
+<script>
+    const emailDisplay = document.getElementById("email-display");
+    const usernameForm = document.getElementById("username-form");
+    const message = document.getElementById("message");
+    let userEmail = "";
+
+    // 🔁 Step 1: Fetch email from session
+    fetch("http://localhost:8081/api/oauth/session/email", {
+      credentials: "include"
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Session expired or unauthorized.");
+      return res.json();
+    })
+    .then(data => {
+      userEmail = data.email;
+      emailDisplay.textContent = userEmail;
+    })
+    .catch(err => {
+      message.textContent = err.message;
+      message.classList.remove("message");
+      message.classList.add("error");
+      emailDisplay.textContent = "Unavailable";
+    });
+
+    // 📨 Step 2: Submit username
+    usernameForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+
+      if (!username) {
+        message.textContent = "Please enter a username.";
+        message.classList.remove("message");
+        message.classList.add("error");
+        return;
+      }
+
+      const payload = {
+        username: username,
+        email: userEmail,
+        password: null
+      };
+
+      fetch("http://localhost:8081/api/oauth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include",
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token && !data.error) {
+          message.textContent = "Username set successfully! Redirecting...";
+          message.classList.remove("error");
+          message.classList.add("message");
+
+          setTimeout(() => {
+            window.location.href = `http://localhost:8081/home?token=${data.token}`;
+          }, 1500);
+        } else {
+          const errorMsg = data.status?.message || data.message || "Username already exists or something went wrong.";
+          message.textContent = errorMsg;
+          message.classList.remove("message");
+          message.classList.add("error");
+        }
+      })
+      .catch(err => {
+        message.textContent = "Failed to send request.";
+        message.classList.remove("message");
+        message.classList.add("error");
+      });
+    });
+</script>
+
+</body>
+</html>
