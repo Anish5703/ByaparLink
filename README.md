@@ -1,1 +1,1 @@
-Login and Sigin Modules implementing spring security and oauth2
+Login and Sigin Modules implementing spring security with jwt stateless and oauth2
