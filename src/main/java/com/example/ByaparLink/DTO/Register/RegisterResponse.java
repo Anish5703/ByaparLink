@@ -4,6 +4,7 @@ import com.example.ByaparLink.Model.Enum.Role;
 import lombok.*;
 
 
+import java.util.HashMap;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -21,6 +22,9 @@ public class RegisterResponse {
 
     public void addMessage(String key,Object value)
     {
+        if(message == null)
+            message = new HashMap<>();
+
         message.put(key,value);
     }
 }

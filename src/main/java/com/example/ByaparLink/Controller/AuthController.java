@@ -5,6 +5,9 @@ import com.example.ByaparLink.DTO.Login.LoginResponse;
 import com.example.ByaparLink.DTO.Register.RegisterRequest;
 import com.example.ByaparLink.DTO.Register.RegisterResponse;
 import com.example.ByaparLink.Service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -14,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -21,7 +25,14 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
-
+    @Operation(
+            summary = "Register User",
+            description = "Starts registration process using RegisterRequest DTO"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Check mail for confirmation link"),
+            @ApiResponse(responseCode = "400", description = "Registration Failed")
+    })
     //Endpoint to register new user
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> registerUser(@Valid @RequestBody RegisterRequest req, HttpServletRequest servletRequest) {

@@ -2,7 +2,6 @@ package com.example.ByaparLink.Security;
 
 
 import com.example.ByaparLink.Service.MyUserDetailsService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -93,9 +92,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(10);
     }
 
-  /*  @Bean
-    public ObjectMapper objectMapper() { return new ObjectMapper(); }
-*/
 
   public static final String[] PUBLIC_ENDPOINTS = {
            "/api/auth/**",
