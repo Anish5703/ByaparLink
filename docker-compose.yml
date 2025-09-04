@@ -16,6 +16,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: byapar-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin4.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "8082:80"   # pgAdmin accessible on localhost:8082
+    depends_on:
+      - db
+
   app:
     build: .
     container_name: byaparlink
