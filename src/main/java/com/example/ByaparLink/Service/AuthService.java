@@ -152,7 +152,7 @@ public class AuthService {
         }
         else
         {
-            map.put("status","Registration Successful");
+            map.put("status","Registration Unsuccessful");
             RegisterResponse resp = new RegisterResponse();
             resp.setUsername(null);
             resp.setEmail(null);
