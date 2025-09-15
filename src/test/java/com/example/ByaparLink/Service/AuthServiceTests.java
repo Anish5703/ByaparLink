@@ -8,6 +8,8 @@ import com.example.ByaparLink.Repository.TokenRepo;
 import com.example.ByaparLink.Repository.UserRepo;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +47,7 @@ public class AuthServiceTests {
     @InjectMocks
     AuthService authService;
 
+    //Helper methods
     private RegisterRequest buildRegisterRequest()
     {
         return new RegisterRequest("garund","rawPassword","garund@gmail.com");
@@ -70,152 +73,160 @@ public class AuthServiceTests {
         return token;
     }
 
-    @Test
-    @Tag("Success Response")
-    public void registerUser_ConfirmationLink_ReturnsSuccessResponse() throws MessagingException {
-        RegisterRequest registerReq = buildRegisterRequest();
+    @Nested
+    @DisplayName("Test for Success Response")
+    class SuccessResponseTests{
+        @Test
+        @Tag("Success Response")
+        public void registerUser_ConfirmationLink_ReturnsSuccessResponse() throws MessagingException {
+            RegisterRequest registerReq = buildRegisterRequest();
 
-        //Mocked data in db
-        Users user = buildExistingUser();
-
-
-        //Mock user db and encoder
-        Mockito.when(userRepo.save(any(Users.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        Mockito.when(encoder.encode(registerReq.getPassword())).thenReturn("encodedPassword");
-        Mockito.when(userRepo.findByUsername(registerReq.getUsername())).thenReturn(null);
-        Mockito.when(userRepo.findByEmail(registerReq.getEmail())).thenReturn(null);
-
-        //Mock token db and email service
-        Mockito.when(tokenRepo.save(any(Token.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        Mockito.when(tokenRepo.findByTokenName(anyString())).thenReturn(null);
-        Mockito.when(servletRequest.getServerName()).thenReturn("localhost");
-        Mockito.when(servletRequest.getServerPort()).thenReturn(8081);
-
-        RegisterResponse registerResp =  authService.registerUser(registerReq,servletRequest);
-        //verify if email service methods were called
-        Mockito.verify(emailService).buildConfirmationEmail(anyString(),anyString());
-        Mockito.verify(emailService).sendHtmlEmail(anyString(),anyString(),anyString());
-
-        //check if the user credentials is saved properly with encoded password
-        assertEquals(registerReq.getUsername(),registerResp.getUsername(),"Expected requested username and response username same");
-        assertEquals("encodedPassword",user.getPassword());
-      //check if register response is not null
-      assertNotNull(registerResp,"Register Response is null");
-      //check if error flag in response is false
-      assertFalse(registerResp.isError(),"Register Response has error");
-      //check if user role is valid
-      assertEquals(Role.USER,registerResp.getRole(),"Expected users role USER");
-      //check if the response message is cosistent
-      assertEquals("Check mail for confirmation link",registerResp.getMessage().get("status"),"Expected Confirmation message");
+            //Mocked data in db
+            Users user = buildExistingUser();
 
 
+            //Mock user db and encoder
+            Mockito.when(userRepo.save(any(Users.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            Mockito.when(encoder.encode(registerReq.getPassword())).thenReturn("encodedPassword");
+            Mockito.when(userRepo.findByUsername(registerReq.getUsername())).thenReturn(null);
+            Mockito.when(userRepo.findByEmail(registerReq.getEmail())).thenReturn(null);
+
+            //Mock token db and email service
+            Mockito.when(tokenRepo.save(any(Token.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            Mockito.when(tokenRepo.findByTokenName(anyString())).thenReturn(null);
+            Mockito.when(servletRequest.getServerName()).thenReturn("localhost");
+            Mockito.when(servletRequest.getServerPort()).thenReturn(8081);
+            Mockito.when(emailService.buildConfirmationEmail(anyString(), anyString())).thenReturn("<html>Confirmation Link</html>");
+
+            RegisterResponse registerResp = authService.registerUser(registerReq, servletRequest);
+            //verify if email service methods were called
+            Mockito.verify(emailService).buildConfirmationEmail(anyString(), anyString());
+            Mockito.verify(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+
+            //check if the user credentials is saved properly with encoded password
+            assertEquals(registerReq.getUsername(), registerResp.getUsername(), "Expected requested username and response username same");
+            assertEquals("encodedPassword", user.getPassword());
+            //check if register response is not null
+            assertNotNull(registerResp, "Register Response is null");
+            //check if error flag in response is false
+            assertFalse(registerResp.isError(), "Register Response has error");
+            //check if user role is valid
+            assertEquals(Role.USER, registerResp.getRole(), "Expected users role USER");
+            //check if the response message is cosistent
+            assertEquals("Check mail for confirmation link", registerResp.getMessage().get("status"), "Expected Confirmation message");
+
+
+        }
+        @Test
+        @Tag("Success Response")
+        public void validateRegisterConfirmation_SuccessfulRegistration_ReturnsSuccessResponse()
+        {
+            String tokenName= "confirmation@Link";
+
+            //Mocked data in db
+            Token token = buildExistingToken();
+            //Mock token db
+            Mockito.when(tokenRepo.findByTokenName(anyString())).thenReturn(token);
+
+            RegisterResponse registerResp = authService.validateRegisterConfirmation(tokenName);
+
+            assertNotNull(registerResp,"Expected Register Response not null");
+            assertFalse(registerResp.isError(),"Expected error flag false");
+            assertEquals("Registration Successful",registerResp.getMessage().get("status"));
+
+        }
+        @Test
+        @Tag("Success Response")
+        public void resendConfirmationToken_ConfirmationLink_ReturnsSuccessResponse() throws MessagingException
+        {
+            String email = "garund@gmail.com";
+
+            Users user = buildExistingUser();
+            user.setActive(false);
+            Token token = buildExistingToken();
+
+            //Mock user db
+            Mockito.when(userRepo.findByEmail(anyString())).thenReturn(user);
+            //Mock token db
+            Mockito.when(tokenRepo.save(any(Token.class))).thenAnswer(invocation->invocation.getArgument(0));
+            Mockito.when(tokenRepo.findByUser(any(Users.class))).thenReturn(token);
+            Mockito.when(servletRequest.getServerName()).thenReturn("localhost");
+            Mockito.when(servletRequest.getServerPort()).thenReturn(8081);
+            Mockito.when(emailService.buildConfirmationEmail(anyString(),anyString())).thenReturn("<html>Confirmation Link</html>");
+
+            RegisterResponse registerResp = authService.resendConfirmationToken(email,servletRequest);
+            //verify if email service methods were called
+            Mockito.verify(emailService).buildConfirmationEmail(anyString(),anyString());
+            Mockito.verify(emailService).sendHtmlEmail(anyString(),anyString(),anyString());
+            Mockito.verify(tokenRepo).delete(any(Token.class));
+            Mockito.verify(tokenRepo).save(any(Token.class));
+
+
+
+            assertNotNull(registerResp,"Expected Register Response not null");
+            assertFalse(registerResp.isError(),"Expected error flag false");
+            assertEquals("Check mail for confirmation link",registerResp.getMessage().get("status"));
+
+
+        }
     }
+    @Nested
+    @DisplayName("Test for Error Response")
+    class ErrorResponseTests{
 
-    @Test
-    @Tag("Error Response")
-    public void registerUser_UsernameAlreadyExists_ReturnsErrorResponse()
-    {
-        RegisterRequest registerReq = buildRegisterRequest();
+        @Test
+        @Tag("Error Response")
+        public void registerUser_UsernameAlreadyExists_ReturnsErrorResponse() {
+            RegisterRequest registerReq = buildRegisterRequest();
 
-        //Mocked data in db
-        Users existingUser = buildExistingUser();
-        //Mock users db
-        Mockito.when(userRepo.findByUsername(anyString())).thenReturn(existingUser);
+            //Mocked data in db
+            Users existingUser = buildExistingUser();
+            //Mock users db
+            Mockito.when(userRepo.findByUsername(anyString())).thenReturn(existingUser);
 
-        RegisterResponse registerResp = authService.registerUser(registerReq,servletRequest);
+            RegisterResponse registerResp = authService.registerUser(registerReq, servletRequest);
 
-        assertNotNull(registerResp,"Expected Register response not null");
-        assertEquals("Username Already Exists",registerResp.getMessage().get("username"),"Expected error Username Already Exists");
-        assertTrue(registerResp.isError(),"Expected error flag true");
-
-
-    }
-
-    @Test
-    @Tag("Error Response")
-    public void registerUser_EmailAlreadyExists_ReturnsErrorResponse()
-    {
-        RegisterRequest registerReq = buildRegisterRequest();
-
-        //Mocked data in db
-        Users existingUser = buildExistingUser();
-
-        //Mock users db
-        Mockito.when(userRepo.findByEmail(anyString())).thenReturn(existingUser);
-
-        RegisterResponse registerResp = authService.registerUser(registerReq,servletRequest);
-
-        assertNotNull(registerResp,"Expected Register Response not null");
-        assertTrue(registerResp.isError(),"Expected error flag true");
-        assertEquals("Email Already Exists",registerResp.getMessage().get("email"),"Expected error Email Already Exists");
-    }
-
-    @Test
-    @Tag("Success Response")
-    public void validateRegisterConfirmation_SuccessfulRegistration_ReturnsSuccessResponse()
-    {
-        String tokenName= "confirmation@Link";
-
-        //Mocked data in db
-        Token token = buildExistingToken();
-        //Mock token db
-        Mockito.when(tokenRepo.findByTokenName(anyString())).thenReturn(token);
-
-        RegisterResponse registerResp = authService.validateRegisterConfirmation(tokenName);
-
-        assertNotNull(registerResp,"Expected Register Response not null");
-        assertFalse(registerResp.isError(),"Expected error flag false");
-        assertEquals("Registration Successful",registerResp.getMessage().get("status"));
-
-    }
-    @Test
-    @Tag("Error Response")
-    public void validateRegisterConfirmation_FailedRegistration_ReturnsErrorResponse()
-    {
-        String tokenName = "confirmation@Link";
-
-        //Mock token db
-        Mockito.when(tokenRepo.findByTokenName(anyString())).thenReturn(null);
-
-        RegisterResponse registerResp = authService.validateRegisterConfirmation(tokenName);
+            assertNotNull(registerResp, "Expected Register response not null");
+            assertEquals("Username Already Exists", registerResp.getMessage().get("username"), "Expected error Username Already Exists");
+            assertTrue(registerResp.isError(), "Expected error flag true");
 
 
-        assertNotNull(registerResp,"Expected Register Response not null");
-        assertTrue(registerResp.isError(),"Expected error flag true");
-        assertEquals("Registration Unsuccessful",registerResp.getMessage().get("status"));
-    }
+        }
 
-    @Test
-    @Tag("Success Response")
-    public void resendConfirmationToken_ConfirmationLink_ReturnsSuccessResponse() throws MessagingException
-    {
-        String email = "garund@gmail.com";
+        @Test
+        @Tag("Error Response")
+        public void registerUser_EmailAlreadyExists_ReturnsErrorResponse() {
+            RegisterRequest registerReq = buildRegisterRequest();
 
-        Users user = buildExistingUser();
-        user.setActive(false);
-        Token token = buildExistingToken();
+            //Mocked data in db
+            Users existingUser = buildExistingUser();
 
-        //Mock user db
-        Mockito.when(userRepo.findByEmail(anyString())).thenReturn(user);
-        //Mock token db
-        Mockito.when(tokenRepo.save(any(Token.class))).thenAnswer(invocation->invocation.getArgument(0));
-        Mockito.when(servletRequest.getServerName()).thenReturn("localhost");
-        Mockito.when(servletRequest.getServerPort()).thenReturn(8081);
-        Mockito.when(emailService.buildConfirmationEmail(anyString(),anyString())).thenReturn("<html>Confirmation Link</html>");
+            //Mock users db
+            Mockito.when(userRepo.findByEmail(anyString())).thenReturn(existingUser);
 
-        RegisterResponse registerResp = authService.resendConfirmationToken(email,servletRequest);
-        //verify if email service methods were called
-        Mockito.verify(emailService).buildConfirmationEmail(anyString(),anyString());
-        Mockito.verify(emailService).sendHtmlEmail(anyString(),anyString(),anyString());
-        Mockito.verify(tokenRepo).delete(any(Token.class));
-        Mockito.verify(tokenRepo).save(any(Token.class));
+            RegisterResponse registerResp = authService.registerUser(registerReq, servletRequest);
+
+            assertNotNull(registerResp, "Expected Register Response not null");
+            assertTrue(registerResp.isError(), "Expected error flag true");
+            assertEquals("Email Already Exists", registerResp.getMessage().get("email"), "Expected error Email Already Exists");
+        }
 
 
+        @Test
+        @Tag("Error Response")
+        public void validateRegisterConfirmation_FailedRegistration_ReturnsErrorResponse() {
+            String tokenName = "confirmation@Link";
 
-        assertNotNull(registerResp,"Expected Register Response not null");
-        assertFalse(registerResp.isError(),"Expected error flag false");
-        assertEquals("Check mail for confirmation link",registerResp.getMessage().get("status"));
+            //Mock token db
+            Mockito.when(tokenRepo.findByTokenName(anyString())).thenReturn(null);
 
+            RegisterResponse registerResp = authService.validateRegisterConfirmation(tokenName);
+
+
+            assertNotNull(registerResp, "Expected Register Response not null");
+            assertTrue(registerResp.isError(), "Expected error flag true");
+            assertEquals("Registration Unsuccessful", registerResp.getMessage().get("status"));
+        }
 
     }
 
