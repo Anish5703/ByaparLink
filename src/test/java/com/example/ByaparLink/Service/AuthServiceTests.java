@@ -1,4 +1,6 @@
 package com.example.ByaparLink.Service;
+import com.example.ByaparLink.DTO.Login.LoginRequest;
+import com.example.ByaparLink.DTO.Login.LoginResponse;
 import com.example.ByaparLink.DTO.Register.RegisterRequest;
 import com.example.ByaparLink.DTO.Register.RegisterResponse;
 import com.example.ByaparLink.Model.Enum.Role;
@@ -8,10 +10,7 @@ import com.example.ByaparLink.Repository.TokenRepo;
 import com.example.ByaparLink.Repository.UserRepo;
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -19,7 +18,13 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import java.util.Collection;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -73,9 +78,14 @@ public class AuthServiceTests {
         return token;
     }
 
+    private LoginRequest buildLoginRequest()
+    {
+        return new LoginRequest("garund","rawPassword");
+    }
+
     @Nested
-    @DisplayName("Test for Success Response")
-    class SuccessResponseTests{
+    @DisplayName("Test for Registration Success Response")
+    class RegistrationSuccessResponseTests{
         @Test
         @Tag("Success Response")
         public void registerUser_ConfirmationLink_ReturnsSuccessResponse() throws MessagingException {
@@ -171,8 +181,8 @@ public class AuthServiceTests {
         }
     }
     @Nested
-    @DisplayName("Test for Error Response")
-    class ErrorResponseTests{
+    @DisplayName("Test for Registration Error Response")
+    class RegistrationErrorResponseTests{
 
         @Test
         @Tag("Error Response")
@@ -228,6 +238,38 @@ public class AuthServiceTests {
             assertEquals("Registration Unsuccessful", registerResp.getMessage().get("status"));
         }
 
+    }
+    @Nested
+    @DisplayName("Test of Login Success Response")
+    class LoginSuccessResponseTests
+    {
+
+       LoginRequest loginReq;
+       Users user;
+
+       @BeforeEach
+        void setup()
+       {
+           loginReq = buildLoginRequest();
+           user = buildExistingUser();
+       }
+
+       @Test
+        public void loginUser_SuccessfulLogin_ReturnsSuccessResponse()
+       {
+          Mockito.when(authManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                  .thenReturn(new UsernamePasswordAuthenticationToken("garund","rawPassword"));
+           Mockito.when(userRepo.findByUsername(anyString())).thenReturn(user);
+
+           LoginResponse loginResp = authService.loginUser(loginReq);
+
+           Mockito.verify(jwtService).generateToken(anyString());
+           Mockito.verify(authManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+
+           assertNotNull(loginResp);
+           assertFalse(loginResp.isError());
+           assertEquals("Login Successfully",loginResp.getMessage().get("status"));
+       }
     }
 
 }
