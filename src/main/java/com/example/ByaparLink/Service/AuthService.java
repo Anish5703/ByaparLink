@@ -62,12 +62,12 @@ public class AuthService {
             Users user = userRepo.findByUsername(req.getUsername());
             Map<String,Object> map = new HashMap<>();
             if(user==null)
-                map.put("username","Username invalid");
+                map.put("username","Username Invalid");
 
             else if(!user.getPassword().equals(encoder.encode(req.getPassword())))
-                map.put("password","Password invalid");
+                map.put("password","Password Invalid");
 
-            map.put("status","Login Failed");
+            map.put("status","Login Failed : "+ex.getLocalizedMessage());
             return UserMapper.toLoginResponse(req,map,true);
 
         }

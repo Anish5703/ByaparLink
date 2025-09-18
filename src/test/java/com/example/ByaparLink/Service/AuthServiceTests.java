@@ -18,8 +18,10 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
@@ -270,6 +272,56 @@ public class AuthServiceTests {
            assertFalse(loginResp.isError());
            assertEquals("Login Successfully",loginResp.getMessage().get("status"));
        }
+    }
+
+    @Nested
+    @DisplayName("Test for Login Error Response")
+    class LoginErrorResponseTests
+    {
+        LoginRequest loginReq;
+        Users user;
+
+        @BeforeEach
+        void setup()
+        {
+            loginReq = buildLoginRequest();
+            user = buildExistingUser();
+        }
+
+        @Test
+        public void loginUser_invalidUsername_ThrowsAuthenticationException()
+        {
+            Mockito.when(authManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getUsername(),loginReq.getPassword())))
+                            .thenThrow(new BadCredentialsException("Bad Credentials"));
+
+           Mockito.when(userRepo.findByUsername(anyString())).thenReturn(null);
+
+           LoginResponse loginResp = authService.loginUser(loginReq);
+
+           assertNotNull(loginResp);
+           assertTrue(loginResp.isError());
+           assertEquals("Username Invalid",loginResp.getMessage().get("username"));
+           assertEquals("Login Failed : Bad Credentials",loginResp.getMessage().get("status"));
+
+        }
+
+        @Test
+        public void loginUser_invalidPassword_ThrowsAuthenticationException()
+        {
+            Mockito.when(authManager.authenticate(new UsernamePasswordAuthenticationToken(loginReq.getUsername(),loginReq.getPassword())))
+                    .thenThrow(new BadCredentialsException("Bad Credentials"));
+
+            Mockito.when(userRepo.findByUsername(anyString())).thenReturn(user);
+            Mockito.when(encoder.encode(anyString())).thenReturn("wrongPassword");
+
+            LoginResponse loginResp = authService.loginUser(loginReq);
+
+            assertNotNull(loginResp);
+            assertTrue(loginResp.isError());
+            assertEquals("Password Invalid",loginResp.getMessage().get("password"));
+            assertEquals("Login Failed : Bad Credentials",loginResp.getMessage().get("status"));
+
+        }
     }
 
 }
